@@ -1,0 +1,43 @@
+name: Deploy GKE Cluster with OpenTofu
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC
+      contents: read
+
+    steps:
+      # Checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Set up OpenTofu
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0  # Updated to 1.9.0
+
+      # Authenticate to GCP using OIDC
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/664095006793/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
+          service_account: "mzm-gke-sa@mzm-org-il.iam.gserviceaccount.com"
+
+      # Initialize OpenTofu with GCS backend
+      - name: OpenTofu Init
+        run: tofu init -backend-config="bucket=mzm-org-il-terraform-state" -backend-config="prefix=gke-cluster/state"
+
+      # Plan the deployment
+      - name: OpenTofu Plan
+        run: tofu plan -out=tfplan
+
+      # Apply the deployment
+      - name: OpenTofu Apply
+        run: tofu apply tfplan
