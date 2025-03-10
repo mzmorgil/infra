@@ -17,9 +17,10 @@ resource "google_project_service" "iam" {
 
 # GCS Bucket for Terraform State
 resource "google_storage_bucket" "terraform_state" {
-  name          = "mzm-org-il-terraform-state"
-  location      = "ME-WEST1"
-  force_destroy = false
+  name                        = "mzm-org-il-terraform-state"
+  location                    = "ME-WEST1"
+  force_destroy               = false
+  uniform_bucket_level_access = true
 
   versioning {
     enabled = true
@@ -43,10 +44,11 @@ resource "google_iam_workload_identity_pool" "github_pool" {
 }
 
 resource "google_iam_workload_identity_pool_provider" "github_provider" {
-  workload_identity_pool_id = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
-  provider_id               = "github-provider"
-  display_name              = "GitHub Provider"
-  description               = "OIDC provider for GitHub Actions"
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-provider"
+  display_name                       = "GitHub Provider"
+  description                        = "OIDC provider for GitHub Actions"
+  attribute_condition                = "assertion.repository_owner=='mzmorgil'"
 
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
@@ -71,7 +73,7 @@ resource "google_project_iam_member" "gke_sa_roles" {
     "roles/container.clusterAdmin",
     "roles/compute.networkAdmin",
     "roles/iam.serviceAccountUser",
-    "roles/storage.admin",  # For GCS state
+    "roles/storage.admin",
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.gke_sa.email}"
@@ -107,8 +109,8 @@ resource "google_compute_address" "static_ip" {
 
 # GKE Cluster
 resource "google_container_cluster" "gke_cluster" {
-  name     = var.cluster_name
-  location = var.region
+  name       = var.cluster_name
+  location   = var.region
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet.name
 
@@ -121,7 +123,7 @@ resource "google_container_cluster" "gke_cluster" {
     services_ipv4_cidr_block = "10.2.0.0/20"
   }
 
-  initial_node_count = 1
+  initial_node_count       = 1
   remove_default_node_pool = true
 
   depends_on = [
@@ -132,37 +134,55 @@ resource "google_container_cluster" "gke_cluster" {
 
 # Node Pool with Static IP (Entry Point)
 resource "google_container_node_pool" "entry_node_pool" {
-  name       = "entry-node-pool"
-  cluster    = google_container_cluster.gke_cluster.name
-  location   = var.region
-  node_count = 1
+  name           = "entry-node-pool"
+  cluster        = google_container_cluster.gke_cluster.name
+  location       = var.region
+  node_locations = ["me-west1-a"]
+  node_count     = 1
 
   node_config {
-    machine_type = "e2-small"
-    spot         = true
+    machine_type    = "e2-small"
+    disk_size_gb    = 20
+    spot            = true
     service_account = google_service_account.gke_sa.email
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     tags = ["entry-node"]
   }
+
+  depends_on = [
+    google_project_service.compute,
+    google_project_service.container,
+    google_project_service.iam,
+    google_project_service.storage,
+  ]
 }
 
 # Additional Spot Node Pool
 resource "google_container_node_pool" "spot_node_pool" {
-  name       = "spot-node-pool"
-  cluster    = google_container_cluster.gke_cluster.name
-  location   = var.region
-  node_count = 1
+  name           = "spot-node-pool"
+  cluster        = google_container_cluster.gke_cluster.name
+  location       = var.region
+  node_locations = ["me-west1-a"]
+  node_count     = 1
 
   node_config {
-    machine_type = "e2-micro"
-    spot         = true
+    machine_type    = "e2-micro"
+    disk_size_gb    = 20
+    spot            = true
     service_account = google_service_account.gke_sa.email
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
+
+  depends_on = [
+    google_project_service.compute,
+    google_project_service.container,
+    google_project_service.iam,
+    google_project_service.storage,
+  ]
 }
 
 # Firewall Rule for entry node
