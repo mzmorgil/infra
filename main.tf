@@ -1,4 +1,8 @@
 # Enable required APIs
+resource "google_project_service" "cloudresourcemanager" {
+  service = "cloudresourcemanager.googleapis.com"
+}
+
 resource "google_project_service" "compute" {
   service = "compute.googleapis.com"
 }
@@ -74,6 +78,7 @@ resource "google_project_iam_member" "gke_sa_roles" {
     "roles/compute.networkAdmin",
     "roles/iam.serviceAccountUser",
     "roles/storage.admin",
+    "roles/iam.workloadIdentityPoolAdmin"
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.gke_sa.email}"
@@ -151,12 +156,6 @@ resource "google_container_node_pool" "entry_node_pool" {
     tags = ["entry-node"]
   }
 
-  depends_on = [
-    google_project_service.compute,
-    google_project_service.container,
-    google_project_service.iam,
-    google_project_service.storage,
-  ]
 }
 
 # Additional Spot Node Pool
@@ -176,13 +175,6 @@ resource "google_container_node_pool" "spot_node_pool" {
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
-
-  depends_on = [
-    google_project_service.compute,
-    google_project_service.container,
-    google_project_service.iam,
-    google_project_service.storage,
-  ]
 }
 
 # Firewall Rule for entry node
