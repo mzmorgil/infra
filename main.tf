@@ -45,49 +45,48 @@ resource "google_iam_workload_identity_pool" "github_pool" {
   workload_identity_pool_id = "github-actions-pool"
   display_name              = "GitHub Actions Pool"
   description               = "Identity pool for GitHub Actions"
+  project                   = var.project_id
 }
 
+# Workload Identity Provider for GitHub Actions
 resource "google_iam_workload_identity_pool_provider" "github_provider" {
   workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-provider"
   display_name                       = "GitHub Provider"
   description                        = "OIDC provider for GitHub Actions"
-  attribute_condition                = "assertion.repository_owner=='mzmorgil'"
-
+  attribute_condition                = "assertion.repository_owner == 'mzmorgil'"
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
   }
-
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
 }
 
-# Service Account for GKE and OpenTofu
-resource "google_service_account" "gke_sa" {
-  account_id   = "mzm-gke-sa"
-  display_name = "GKE Service Account"
+# Service Account for CI/CD (Terraform/GitHub Actions)
+resource "google_service_account" "cicd_sa" {
+  account_id   = "mzm-cicd-sa"
+  display_name = "CI/CD Service Account"
+  project      = var.project_id
 }
 
-# Grant the service account necessary roles
-resource "google_project_iam_member" "gke_sa_roles" {
+# Grant CI/CD service account necessary roles for Terraform
+resource "google_project_iam_member" "cicd_sa_roles" {
   for_each = toset([
-    "roles/container.clusterAdmin",
-    "roles/compute.networkAdmin",
-    "roles/iam.serviceAccountUser",
-    "roles/storage.admin",
-    "roles/iam.workloadIdentityPoolAdmin"
+    "roles/storage.admin",         # For Terraform state bucket
+    "roles/compute.admin",         # For VPC and networking
+    "roles/container.admin",       # For GKE cluster management
   ])
   role    = each.key
-  member  = "serviceAccount:${google_service_account.gke_sa.email}"
+  member  = "serviceAccount:${google_service_account.cicd_sa.email}"
   project = var.project_id
 }
 
-# Allow GitHub Actions to impersonate the service account
+# Allow GitHub Actions to impersonate the CI/CD service account
 resource "google_service_account_iam_member" "github_impersonation" {
-  service_account_id = google_service_account.gke_sa.name
+  service_account_id = google_service_account.cicd_sa.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/mzmorgil/infra"
 }
@@ -96,6 +95,7 @@ resource "google_service_account_iam_member" "github_impersonation" {
 resource "google_compute_network" "vpc" {
   name                    = "mzm-vpc"
   auto_create_subnetworks = false
+  project                 = var.project_id
 }
 
 # Subnet for GKE
@@ -104,12 +104,14 @@ resource "google_compute_subnetwork" "subnet" {
   ip_cidr_range = "10.0.0.0/16"
   region        = var.region
   network       = google_compute_network.vpc.id
+  project       = var.project_id
 }
 
 # Static Public IP for the entry node
 resource "google_compute_address" "static_ip" {
-  name   = "mzm-static-ip"
-  region = var.region
+  name    = "mzm-static-ip"
+  region  = var.region
+  project = var.project_id
 }
 
 # GKE Cluster
@@ -118,6 +120,7 @@ resource "google_container_cluster" "gke_cluster" {
   location   = var.region
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet.name
+  project    = var.project_id
 
   release_channel {
     channel = "REGULAR"
@@ -146,16 +149,14 @@ resource "google_container_node_pool" "entry_node_pool" {
   node_count     = 1
 
   node_config {
-    machine_type    = "e2-small"
-    disk_size_gb    = 20
-    spot            = true
-    service_account = google_service_account.gke_sa.email
+    machine_type = "e2-small"
+    disk_size_gb = 20
+    spot         = true
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     tags = ["entry-node"]
   }
-
 }
 
 # Additional Spot Node Pool
@@ -167,10 +168,9 @@ resource "google_container_node_pool" "spot_node_pool" {
   node_count     = 1
 
   node_config {
-    machine_type    = "e2-micro"
-    disk_size_gb    = 20
-    spot            = true
-    service_account = google_service_account.gke_sa.email
+    machine_type = "e2-micro"
+    disk_size_gb = 20
+    spot         = true
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
@@ -181,6 +181,7 @@ resource "google_container_node_pool" "spot_node_pool" {
 resource "google_compute_firewall" "allow_entry" {
   name    = "allow-entry-node"
   network = google_compute_network.vpc.name
+  project = var.project_id
 
   allow {
     protocol = "tcp"
