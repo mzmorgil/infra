@@ -28,7 +28,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: "projects/664095006793/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
-          service_account: "mzm-gke-sa@mzm-org-il.iam.gserviceaccount.com"
+          service_account: "mzm-cicd-sa@mzm-org-il.iam.gserviceaccount.com"
 
       # Initialize OpenTofu with GCS backend
       - name: OpenTofu Init
