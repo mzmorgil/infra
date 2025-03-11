@@ -78,6 +78,8 @@ resource "google_project_iam_member" "cicd_sa_roles" {
     "roles/storage.admin",         # For Terraform state bucket
     "roles/compute.admin",         # For VPC and networking
     "roles/container.admin",       # For GKE cluster management
+    "roles/storage.objectAdmin",
+    "roles/viewer"
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.cicd_sa.email}"
