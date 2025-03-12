@@ -9,7 +9,7 @@ resource "google_project_service" "apis" {
   ])
   service            = each.key
   project            = var.project_id
-  disable_on_destroy = false  # Prevents disabling APIs during destroy
+  disable_on_destroy = false # Prevents disabling APIs during destroy
 }
 
 # GCS Bucket for Terraform State
@@ -68,7 +68,7 @@ resource "google_service_account" "cicd_sa" {
 # Grant CI/CD service account full admin access
 resource "google_project_iam_member" "cicd_sa_roles" {
   for_each = toset([
-    "roles/owner"  # Full admin access to the project
+    "roles/owner" # Full admin access to the project
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.cicd_sa.email}"
@@ -114,9 +114,10 @@ resource "google_compute_subnetwork" "subnet" {
 
 # Static Public IP for the entry node
 resource "google_compute_address" "static_ip" {
-  name    = "mzm-static-ip"
-  region  = var.region
-  project = var.project_id
+  name         = "mzm-static-ip"
+  region       = var.region
+  project      = var.project_id
+  network_tier = "STANDARD"
 }
 
 # GKE Cluster
@@ -139,12 +140,12 @@ resource "google_container_cluster" "gke_cluster" {
   initial_node_count       = 1
   remove_default_node_pool = true
 
-monitoring_config {
+  monitoring_config {
     managed_prometheus {
-      enabled = false  # Explicitly disable Managed Prometheus
+      enabled = false # Explicitly disable Managed Prometheus
     }
   }
-  
+
   depends_on = [
     google_project_service.apis,
   ]
@@ -163,7 +164,7 @@ resource "google_container_node_pool" "entry_node_pool" {
     disk_size_gb    = 20
     spot            = true
     service_account = google_service_account.gke_node_sa.email
-    oauth_scopes    = [
+    oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     tags = ["entry-node"]
@@ -183,7 +184,7 @@ resource "google_container_node_pool" "spot_node_pool" {
     disk_size_gb    = 20
     spot            = true
     service_account = google_service_account.gke_node_sa.email
-    oauth_scopes    = [
+    oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
