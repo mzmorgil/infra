@@ -169,8 +169,6 @@ resource "google_container_cluster" "gke_cluster" {
 resource "google_container_node_pool" "entry_node_pool" {
   name           = "entry-node-pool"
   cluster        = google_container_cluster.gke_cluster.name
-  location       = var.region
-  node_locations = [var.zonal]
   node_count     = 1
 
   node_config {
@@ -190,8 +188,6 @@ resource "google_container_node_pool" "entry_node_pool" {
 resource "google_container_node_pool" "spot_node_pool" {
   name           = "spot-node-pool"
   cluster        = google_container_cluster.gke_cluster.name
-  location       = var.region
-  node_locations = [var.zonal]
   node_count     = 1
 
   node_config {
