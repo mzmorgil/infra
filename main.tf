@@ -148,6 +148,17 @@ resource "google_container_cluster" "gke_cluster" {
 
   logging_service = "none"
 
+  addons_config {
+    horizontal_pod_autoscaling {
+      disabled = true
+    }
+    network_policy_config {
+      disabled = true
+    }
+  }
+
+  monitoring_service = "monitoring.googleapis.com/kubernetes"
+
   depends_on = [
     google_project_service.apis,
   ]
