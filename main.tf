@@ -7,9 +7,9 @@ resource "google_project_service" "apis" {
     "storage.googleapis.com",
     "iam.googleapis.com",
   ])
-  service = each.key
-  project = var.project_id
-  disable_on_destroy = false
+  service            = each.key
+  project            = var.project_id
+  disable_on_destroy = false  # Prevents disabling APIs during destroy
 }
 
 # GCS Bucket for Terraform State
@@ -65,7 +65,7 @@ resource "google_service_account" "cicd_sa" {
   project      = var.project_id
 }
 
-# Grant CI/CD service account necessary roles for Terraform
+# Grant CI/CD service account full admin access
 resource "google_project_iam_member" "cicd_sa_roles" {
   for_each = toset([
     "roles/owner"  # Full admin access to the project
@@ -80,6 +80,20 @@ resource "google_service_account_iam_member" "github_impersonation" {
   service_account_id = google_service_account.cicd_sa.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/mzmorgil/infra"
+}
+
+# Custom Service Account for GKE Nodes
+resource "google_service_account" "gke_node_sa" {
+  account_id   = "mzm-gke-node-sa"
+  display_name = "GKE Node Service Account"
+  project      = var.project_id
+}
+
+# Grant GKE Node Service Account the minimal role
+resource "google_project_iam_member" "gke_node_sa_role" {
+  role    = "roles/container.defaultNodeServiceAccount"
+  member  = "serviceAccount:${google_service_account.gke_node_sa.email}"
+  project = var.project_id
 }
 
 # Custom VPC
@@ -139,10 +153,11 @@ resource "google_container_node_pool" "entry_node_pool" {
   node_count     = 1
 
   node_config {
-    machine_type = "e2-small"
-    disk_size_gb = 20
-    spot         = true
-    oauth_scopes = [
+    machine_type    = "e2-small"
+    disk_size_gb    = 20
+    spot            = true
+    service_account = google_service_account.gke_node_sa.email
+    oauth_scopes    = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     tags = ["entry-node"]
@@ -158,10 +173,11 @@ resource "google_container_node_pool" "spot_node_pool" {
   node_count     = 1
 
   node_config {
-    machine_type = "e2-micro"
-    disk_size_gb = 20
-    spot         = true
-    oauth_scopes = [
+    machine_type    = "e2-micro"
+    disk_size_gb    = 20
+    spot            = true
+    service_account = google_service_account.gke_node_sa.email
+    oauth_scopes    = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
