@@ -167,9 +167,10 @@ resource "google_container_cluster" "gke_cluster" {
 
 # Node Pool with Static IP (Entry Point)
 resource "google_container_node_pool" "entry_node_pool" {
-  name           = "entry-node-pool"
-  cluster        = google_container_cluster.gke_cluster.name
-  node_count     = 1
+  name       = "entry-node-pool"
+  cluster    = google_container_cluster.gke_cluster.name
+  location   = var.zonal
+  node_count = 1
 
   node_config {
     machine_type    = "e2-small"
@@ -186,9 +187,10 @@ resource "google_container_node_pool" "entry_node_pool" {
 
 # Additional Spot Node Pool
 resource "google_container_node_pool" "spot_node_pool" {
-  name           = "spot-node-pool"
-  cluster        = google_container_cluster.gke_cluster.name
-  node_count     = 1
+  name       = "spot-node-pool"
+  cluster    = google_container_cluster.gke_cluster.name
+  location   = var.zonal
+  node_count = 1
 
   node_config {
     machine_type    = "e2-micro"
