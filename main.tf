@@ -9,7 +9,7 @@ resource "google_project_service" "apis" {
   ])
   service            = each.key
   project            = var.project_id
-  disable_on_destroy = false  # Prevents disabling APIs during destroy
+  disable_on_destroy = false # Prevents disabling APIs during destroy
 }
 
 # GCS Bucket for Terraform State
@@ -68,7 +68,7 @@ resource "google_service_account" "cicd_sa" {
 # Grant CI/CD service account full admin access
 resource "google_project_iam_member" "cicd_sa_roles" {
   for_each = toset([
-    "roles/owner"  # Full admin access to the project
+    "roles/owner" # Full admin access to the project
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.cicd_sa.email}"
@@ -114,15 +114,16 @@ resource "google_compute_subnetwork" "subnet" {
 
 # Static Public IP for the entry node
 resource "google_compute_address" "static_ip" {
-  name    = "mzm-static-ip"
-  region  = var.region
-  project = var.project_id
+  name         = "mzm-static-ip"
+  region       = var.region
+  project      = var.project_id
+  network_tier = "STANDARD"
 }
 
 # GKE Cluster
 resource "google_container_cluster" "gke_cluster" {
   name       = var.cluster_name
-  location   = var.region
+  location   = var.zonal
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet.name
   project    = var.project_id
@@ -139,6 +140,25 @@ resource "google_container_cluster" "gke_cluster" {
   initial_node_count       = 1
   remove_default_node_pool = true
 
+  monitoring_config {
+    managed_prometheus {
+      enabled = false # Explicitly disable Managed Prometheus
+    }
+  }
+
+  logging_service = "none"
+
+  addons_config {
+    horizontal_pod_autoscaling {
+      disabled = true
+    }
+    network_policy_config {
+      disabled = true
+    }
+  }
+
+  monitoring_service = "monitoring.googleapis.com/kubernetes"
+
   depends_on = [
     google_project_service.apis,
   ]
@@ -149,15 +169,16 @@ resource "google_container_node_pool" "entry_node_pool" {
   name           = "entry-node-pool"
   cluster        = google_container_cluster.gke_cluster.name
   location       = var.region
-  node_locations = [var.singlezone]
+  node_locations = [var.zonal]
   node_count     = 1
 
   node_config {
     machine_type    = "e2-small"
     disk_size_gb    = 20
+    disk_type       = "pd-standard"
     spot            = true
     service_account = google_service_account.gke_node_sa.email
-    oauth_scopes    = [
+    oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     tags = ["entry-node"]
@@ -169,15 +190,16 @@ resource "google_container_node_pool" "spot_node_pool" {
   name           = "spot-node-pool"
   cluster        = google_container_cluster.gke_cluster.name
   location       = var.region
-  node_locations = [var.singlezone]
+  node_locations = [var.zonal]
   node_count     = 1
 
   node_config {
     machine_type    = "e2-micro"
     disk_size_gb    = 20
+    disk_type       = "pd-standard"
     spot            = true
     service_account = google_service_account.gke_node_sa.email
-    oauth_scopes    = [
+    oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
