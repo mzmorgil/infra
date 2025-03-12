@@ -9,6 +9,7 @@ resource "google_project_service" "apis" {
   ])
   service = each.key
   project = var.project_id
+  disable_on_destroy = false
 }
 
 # GCS Bucket for Terraform State
@@ -67,11 +68,7 @@ resource "google_service_account" "cicd_sa" {
 # Grant CI/CD service account necessary roles for Terraform
 resource "google_project_iam_member" "cicd_sa_roles" {
   for_each = toset([
-    "roles/storage.admin",         # For Terraform state bucket
-    "roles/compute.admin",         # For VPC and networking
-    "roles/container.admin",       # For GKE cluster management
-    "roles/storage.objectAdmin",
-    "roles/viewer"
+    "roles/owner"  # Full admin access to the project
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.cicd_sa.email}"
