@@ -175,6 +175,7 @@ resource "google_container_node_pool" "entry_node_pool" {
   node_config {
     machine_type    = "e2-small"
     disk_size_gb    = 20
+    disk_type       = "pd-standard"
     spot            = true
     service_account = google_service_account.gke_node_sa.email
     oauth_scopes = [
@@ -195,6 +196,7 @@ resource "google_container_node_pool" "spot_node_pool" {
   node_config {
     machine_type    = "e2-micro"
     disk_size_gb    = 20
+    disk_type       = "pd-standard"
     spot            = true
     service_account = google_service_account.gke_node_sa.email
     oauth_scopes = [
