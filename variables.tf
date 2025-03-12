@@ -8,8 +8,8 @@ variable "region" {
   default     = "me-west1"
 }
 
-variable "singlezone" {
-  description = "GCP Zone for node pools"
+variable "zonal" {
+  description = "GCP Single Zone"
   default     = "me-west1-c"
 }
 

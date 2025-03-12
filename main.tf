@@ -122,7 +122,7 @@ resource "google_compute_address" "static_ip" {
 # GKE Cluster
 resource "google_container_cluster" "gke_cluster" {
   name       = var.cluster_name
-  location   = var.region
+  location   = var.zonal
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet.name
   project    = var.project_id
@@ -139,6 +139,12 @@ resource "google_container_cluster" "gke_cluster" {
   initial_node_count       = 1
   remove_default_node_pool = true
 
+monitoring_config {
+    managed_prometheus {
+      enabled = false  # Explicitly disable Managed Prometheus
+    }
+  }
+  
   depends_on = [
     google_project_service.apis,
   ]
@@ -149,7 +155,7 @@ resource "google_container_node_pool" "entry_node_pool" {
   name           = "entry-node-pool"
   cluster        = google_container_cluster.gke_cluster.name
   location       = var.region
-  node_locations = [var.singlezone]
+  node_locations = [var.zonal]
   node_count     = 1
 
   node_config {
@@ -169,7 +175,7 @@ resource "google_container_node_pool" "spot_node_pool" {
   name           = "spot-node-pool"
   cluster        = google_container_cluster.gke_cluster.name
   location       = var.region
-  node_locations = [var.singlezone]
+  node_locations = [var.zonal]
   node_count     = 1
 
   node_config {
