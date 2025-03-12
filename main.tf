@@ -147,7 +147,9 @@ resource "google_container_cluster" "gke_cluster" {
     }
   }
 
-  logging_service = "none"
+  logging_config {
+    enable_components = [] # Empty list disables all logging components
+  }
 
   addons_config {
     horizontal_pod_autoscaling {
