@@ -146,6 +146,8 @@ resource "google_container_cluster" "gke_cluster" {
     }
   }
 
+  logging_service = "none"
+
   depends_on = [
     google_project_service.apis,
   ]
