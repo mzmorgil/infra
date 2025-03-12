@@ -8,6 +8,11 @@ variable "region" {
   default     = "me-west1"
 }
 
+variable "singlezone" {
+  description = "GCP Zone for node pools"
+  default     = "me-west1-c"
+}
+
 variable "cluster_name" {
   description = "Name of the GKE cluster"
   default     = "mzm-gke-cluster"

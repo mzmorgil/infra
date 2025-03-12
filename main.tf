@@ -1,22 +1,14 @@
-# Enable required APIs
-resource "google_project_service" "cloudresourcemanager" {
-  service = "cloudresourcemanager.googleapis.com"
-}
-
-resource "google_project_service" "compute" {
-  service = "compute.googleapis.com"
-}
-
-resource "google_project_service" "container" {
-  service = "container.googleapis.com"
-}
-
-resource "google_project_service" "storage" {
-  service = "storage.googleapis.com"
-}
-
-resource "google_project_service" "iam" {
-  service = "iam.googleapis.com"
+# Enable required APIs using for_each
+resource "google_project_service" "apis" {
+  for_each = toset([
+    "cloudresourcemanager.googleapis.com",
+    "compute.googleapis.com",
+    "container.googleapis.com",
+    "storage.googleapis.com",
+    "iam.googleapis.com",
+  ])
+  service = each.key
+  project = var.project_id
 }
 
 # GCS Bucket for Terraform State
@@ -137,8 +129,7 @@ resource "google_container_cluster" "gke_cluster" {
   remove_default_node_pool = true
 
   depends_on = [
-    google_project_service.container,
-    google_project_service.compute,
+    google_project_service.apis,
   ]
 }
 
@@ -147,7 +138,7 @@ resource "google_container_node_pool" "entry_node_pool" {
   name           = "entry-node-pool"
   cluster        = google_container_cluster.gke_cluster.name
   location       = var.region
-  node_locations = ["me-west1-a"]
+  node_locations = [var.singlezone]
   node_count     = 1
 
   node_config {
@@ -166,7 +157,7 @@ resource "google_container_node_pool" "spot_node_pool" {
   name           = "spot-node-pool"
   cluster        = google_container_cluster.gke_cluster.name
   location       = var.region
-  node_locations = ["me-west1-a"]
+  node_locations = [var.singlezone]
   node_count     = 1
 
   node_config {
