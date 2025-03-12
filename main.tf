@@ -141,6 +141,7 @@ resource "google_container_cluster" "gke_cluster" {
   remove_default_node_pool = true
 
   monitoring_config {
+    enable_components = ["SYSTEM_COMPONENTS"]
     managed_prometheus {
       enabled = false # Explicitly disable Managed Prometheus
     }
@@ -156,8 +157,6 @@ resource "google_container_cluster" "gke_cluster" {
       disabled = true
     }
   }
-
-  monitoring_service = "monitoring.googleapis.com/kubernetes"
 
   depends_on = [
     google_project_service.apis,
