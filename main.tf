@@ -151,13 +151,29 @@ resource "google_container_cluster" "gke_cluster" {
     enable_components = [] # Empty list disables all logging components
   }
 
+  control_plane_endpoints_config {
+    dns_endpoint_config {
+      allow_external_traffic = true # Allow external DNS access (optional)
+    }
+  }
+
   addons_config {
+    http_load_balancing {
+      disabled = true # Explicitly disable HTTP Load Balancing add-on
+    }
     horizontal_pod_autoscaling {
       disabled = true
     }
     network_policy_config {
       disabled = true
     }
+    dns_cache_config {
+      enabled = true
+    }
+  }
+
+  workload_identity_config {
+    workload_pool = "${var.project_id}.svc.id.goog"
   }
 
   depends_on = [
