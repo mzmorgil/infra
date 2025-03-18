@@ -149,12 +149,6 @@ resource "google_container_cluster" "gke_cluster" {
     }
   }
 
-  control_plane_endpoints_config {
-    dns_endpoint_config {
-      allow_external_traffic = true # Allow external DNS access (optional)
-    }
-  }
-
   addons_config {
     http_load_balancing {
       disabled = true # Explicitly disable HTTP Load Balancing add-on
