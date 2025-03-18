@@ -9,7 +9,7 @@ resource "google_project_service" "apis" {
   ])
   service            = each.key
   project            = var.project_id
-  disable_on_destroy = false # Prevents disabling APIs during destroy
+  disable_on_destroy = false
 }
 
 # GCS Bucket for Terraform State
@@ -68,7 +68,7 @@ resource "google_service_account" "cicd_sa" {
 # Grant CI/CD service account full admin access
 resource "google_project_iam_member" "cicd_sa_roles" {
   for_each = toset([
-    "roles/owner" # Full admin access to the project
+    "roles/owner"
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.cicd_sa.email}"
@@ -112,14 +112,6 @@ resource "google_compute_subnetwork" "subnet" {
   project       = var.project_id
 }
 
-# Static Public IP for the entry node
-resource "google_compute_address" "static_ip" {
-  name         = "mzm-static-ip"
-  region       = var.region
-  project      = var.project_id
-  network_tier = "STANDARD"
-}
-
 # GKE Cluster
 resource "google_container_cluster" "gke_cluster" {
   name       = var.cluster_name
@@ -143,12 +135,18 @@ resource "google_container_cluster" "gke_cluster" {
   monitoring_config {
     enable_components = ["SYSTEM_COMPONENTS"]
     managed_prometheus {
-      enabled = false # Explicitly disable Managed Prometheus
+      enabled = false
     }
   }
 
   logging_config {
-    enable_components = [] # Empty list disables all logging components
+    enable_components = []
+  }
+
+  control_plane_endpoints_config {
+    dns_endpoint_config {
+      allow_external_traffic = true
+    }
   }
 
   control_plane_endpoints_config {
@@ -181,27 +179,7 @@ resource "google_container_cluster" "gke_cluster" {
   ]
 }
 
-# Node Pool with Static IP (Entry Point)
-resource "google_container_node_pool" "entry_node_pool" {
-  name       = "entry-node-pool"
-  cluster    = google_container_cluster.gke_cluster.name
-  location   = var.zonal
-  node_count = 1
-
-  node_config {
-    machine_type    = "e2-small"
-    disk_size_gb    = 20
-    disk_type       = "pd-standard"
-    spot            = true
-    service_account = google_service_account.gke_node_sa.email
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/cloud-platform",
-    ]
-    tags = ["entry-node"]
-  }
-}
-
-# Additional Spot Node Pool
+# Spot Node Pool
 resource "google_container_node_pool" "spot_node_pool" {
   name       = "spot-node-pool"
   cluster    = google_container_cluster.gke_cluster.name
@@ -220,9 +198,9 @@ resource "google_container_node_pool" "spot_node_pool" {
   }
 }
 
-# Firewall Rule for entry node
-resource "google_compute_firewall" "allow_entry" {
-  name    = "allow-entry-node"
+# Firewall Rule to allow traffic to all nodes
+resource "google_compute_firewall" "allow_web_traffic" {
+  name    = "allow-web-traffic"
   network = google_compute_network.vpc.name
   project = var.project_id
 
@@ -232,5 +210,4 @@ resource "google_compute_firewall" "allow_entry" {
   }
 
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["entry-node"]
 }
