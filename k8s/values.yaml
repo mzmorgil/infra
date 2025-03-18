@@ -1,0 +1,9 @@
+controller:
+  hostPort:
+    enabled: true
+    ports:
+      http: 80
+      https: 443
+  service:
+    type: NodePort  # Prevents external load balancer creation
+  replicaCount: 1    # Optional: Ensures single pod for simplicity

@@ -150,6 +150,9 @@ resource "google_container_cluster" "gke_cluster" {
   }
 
   addons_config {
+    http_load_balancing {
+      disabled = true # Explicitly disable HTTP Load Balancing add-on
+    }
     horizontal_pod_autoscaling {
       disabled = true
     }
