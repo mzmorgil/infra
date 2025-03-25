@@ -41,3 +41,9 @@ variable "cloudflare_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "cloudflare_zero_trust_tunnel_cloudflared_id" {
+  description = "Cloudflare Zero Trust Tunnel Cloudflared ID"
+  type        = string
+  sensitive   = true
+}
