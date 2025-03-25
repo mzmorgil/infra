@@ -94,9 +94,17 @@ resource "kubernetes_deployment" "cloudflared" {
 
       spec {
         container {
-          image = "cloudflare/cloudflared:latest"
+          image = "cloudflare/cloudflared:2025.2.1"
           name  = "cloudflared"
-          args  = ["tunnel", "run", "--token", "$(TUNNEL_TOKEN)"] # Reference the env var
+          args = [
+            "--metrics",
+            "0.0.0.0:2000",
+            "--no-autoupdate",
+            "tunnel",
+            "run",
+            "--token",
+            "$(TUNNEL_TOKEN)"
+          ]
 
           env {
             name = "TUNNEL_TOKEN"
@@ -108,15 +116,28 @@ resource "kubernetes_deployment" "cloudflared" {
             }
           }
 
-          # liveness_probe {
-          #   http_get {
-          #     path = "/ready"
-          #     port = 2000
-          #   }
-          #   initial_delay_seconds = 1
-          #   period_seconds        = 10
-          #   failure_threshold     = 1
-          # }
+          port {
+            container_port = 2000
+            name           = "metrics"
+          }
+
+          liveness_probe {
+            http_get {
+              path = "/healthcheck"
+              port = 2000
+            }
+            period_seconds    = 10
+            failure_threshold = 3
+          }
+
+          readiness_probe {
+            http_get {
+              path = "/ready"
+              port = 2000
+            }
+            period_seconds    = 10
+            failure_threshold = 3
+          }
         }
       }
     }
