@@ -36,7 +36,7 @@ variable "cloudflare_email" {
   sensitive   = true
 }
 
-variable "cloudflare_token" {
+variable "cloudflare_api_token" {
   description = "Cloudflare API token created at https://dash.cloudflare.com"
   type        = string
   sensitive   = true
