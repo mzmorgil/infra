@@ -191,17 +191,3 @@ resource "google_container_node_pool" "spot_node_pool" {
     ]
   }
 }
-
-# Firewall Rule to allow traffic to all nodes
-resource "google_compute_firewall" "allow_web_traffic" {
-  name    = "allow-web-traffic"
-  network = google_compute_network.vpc.name
-  project = var.project_id
-
-  allow {
-    protocol = "tcp"
-    ports    = ["80", "443"]
-  }
-
-  source_ranges = ["0.0.0.0/0"]
-}
