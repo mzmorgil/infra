@@ -25,7 +25,7 @@ jobs:
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: "projects/664095006793/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
+          workload_identity_provider: "projects/664095006793/locations/global/workloadIdentityPools/github-actions/providers/github-provider"
           service_account: "mzm-cicd-sa@mzm-org-il.iam.gserviceaccount.com"
 
       - name: Debug GCP Auth Details
@@ -34,12 +34,6 @@ jobs:
           cat "$GOOGLE_APPLICATION_CREDENTIALS" || echo "No credentials file found."
           echo "Gcloud config:"
           gcloud config list
-          echo "Active account:"
-          gcloud auth list
-          # Fallback: explicitly activate credentials if needed
-          if ! gcloud auth list --filter="status:ACTIVE" | grep -q "mzm-cicd-sa"; then
-            gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
-          fi
 
       - name: Verify GCP Auth
         run: gcloud auth list
