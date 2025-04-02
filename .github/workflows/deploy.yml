@@ -11,7 +11,7 @@ jobs:
     permissions:
       id-token: write  # Required for OIDC
       contents: read
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     steps:
       # Checkout the repository
@@ -37,6 +37,8 @@ jobs:
 
       # Plan the deployment
       - name: OpenTofu Plan
+        env:
+          TF_LOG: "DEBUG"
         run: tofu plan -out=tfplan
 
       # Apply the deployment
