@@ -9,38 +9,47 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for OIDC
+      id-token: write
       contents: read
-    timeout-minutes: 5
+    timeout-minutes: 10  # Job-level timeout as a fallback
 
     steps:
-      # Checkout the repository
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Set up OpenTofu
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
         with:
-          tofu_version: 1.9.0  # Updated to 1.9.0
+          tofu_version: 1.9.0
 
-      # Authenticate to GCP using OIDC
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: "projects/664095006793/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
           service_account: "mzm-cicd-sa@mzm-org-il.iam.gserviceaccount.com"
 
-      # Initialize OpenTofu with GCS backend
+      - name: Verify GCP Auth
+        run: gcloud auth list
+
+      - name: Verify GCS Bucket Access
+        run: gsutil ls gs://mzm-org-il-terraform-state
+
       - name: OpenTofu Init
         run: tofu init -backend-config="bucket=mzm-org-il-terraform-state" -backend-config="prefix=gke-cluster/state"
 
-      # Plan the deployment
       - name: OpenTofu Plan
         env:
-          TF_LOG: "DEBUG"
-        run: tofu plan -out=tfplan
+          TF_LOG: DEBUG          # Set log level to DEBUG
+          TF_LOG_PATH: plan.log  # Write logs to plan.log
+        run: |
+          # Run tofu plan with a 2-minute timeout
+          timeout 120s tofu plan -out=tfplan || true
+          # Display the log file, even if timeout occurs
+          if [ -f plan.log ]; then
+            cat plan.log
+          else
+            echo "No logs captured."
+          fi
 
-      # Apply the deployment
       - name: OpenTofu Apply
         run: tofu apply tfplan
