@@ -11,7 +11,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    timeout-minutes: 10  # Job-level timeout as a fallback
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -28,6 +28,19 @@ jobs:
           workload_identity_provider: "projects/664095006793/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
           service_account: "mzm-cicd-sa@mzm-org-il.iam.gserviceaccount.com"
 
+      - name: Debug GCP Auth Details
+        run: |
+          echo "Credentials file: $GOOGLE_APPLICATION_CREDENTIALS"
+          cat "$GOOGLE_APPLICATION_CREDENTIALS" || echo "No credentials file found."
+          echo "Gcloud config:"
+          gcloud config list
+          echo "Active account:"
+          gcloud auth list
+          # Fallback: explicitly activate credentials if needed
+          if ! gcloud auth list --filter="status:ACTIVE" | grep -q "mzm-cicd-sa"; then
+            gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          fi
+
       - name: Verify GCP Auth
         run: gcloud auth list
 
@@ -39,12 +52,10 @@ jobs:
 
       - name: OpenTofu Plan
         env:
-          TF_LOG: DEBUG          # Set log level to DEBUG
-          TF_LOG_PATH: plan.log  # Write logs to plan.log
+          TF_LOG: DEBUG
+          TF_LOG_PATH: plan.log
         run: |
-          # Run tofu plan with a 2-minute timeout
           timeout 120s tofu plan -out=tfplan || true
-          # Display the log file, even if timeout occurs
           if [ -f plan.log ]; then
             cat plan.log
           else
