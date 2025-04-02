@@ -6,23 +6,16 @@ data "cloudflare_zones" "self" {
   name = var.cloudflare_zone
 }
 
-### Cloudflare Resources
-
-# Due to existing bug that causes replacement we will use tunnel_id from variable.
-# Resource was created by IaC, than removed from state. 
-# Once bug is fixed, will be resumed to state by an import
-
-# https://github.com/cloudflare/terraform-provider-cloudflare/issues/5363
-# resource "cloudflare_zero_trust_tunnel_cloudflared" "self" {
-#   account_id = var.cloudflare_account_id
-#   name       = "mzm-gke-cluster"
-#   config_src = "cloudflare" # forces replacement 
-# }
+resource "cloudflare_zero_trust_tunnel_cloudflared" "self" {
+  account_id = var.cloudflare_account_id
+  name       = "mzm-gke-cluster"
+  config_src = "cloudflare"
+}
 
 resource "cloudflare_dns_record" "mzm-gke-cluster" {
   zone_id = local.cloudflare_zone_id
   name    = var.cloudflare_zone
-  content = "${var.cloudflare_zero_trust_tunnel_cloudflared_id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.self.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
   ttl     = "1"
@@ -30,7 +23,7 @@ resource "cloudflare_dns_record" "mzm-gke-cluster" {
 
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "self" {
   account_id = var.cloudflare_account_id
-  tunnel_id  = var.cloudflare_zero_trust_tunnel_cloudflared_id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.self.id
   source     = "cloudflare"
 
   config = {
@@ -52,7 +45,7 @@ resource "kubernetes_namespace" "cloudflared" {
 
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "self" {
   account_id = var.cloudflare_account_id
-  tunnel_id  = var.cloudflare_zero_trust_tunnel_cloudflared_id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.self.id
 }
 
 # Create a Kubernetes Secret to store the tunnel token
