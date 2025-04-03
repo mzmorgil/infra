@@ -10,10 +10,19 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6"
     }
+
+    github = {
+      source  = "integrations/github"
+      version = "~> 6"
+    }
   }
 }
 
 provider "google" {
   project = var.project_id
   region  = var.region
+}
+
+provider "github" {
+    owner = "mzmorgil"
 }

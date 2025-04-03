@@ -30,12 +30,6 @@ variable "cloudflare_zone" {
   type        = string
 }
 
-variable "cloudflare_email" {
-  description = "Email address for your Cloudflare account"
-  type        = string
-  sensitive   = true
-}
-
 variable "cloudflare_api_token" {
   description = "Cloudflare API token created at https://dash.cloudflare.com"
   type        = string

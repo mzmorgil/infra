@@ -6,8 +6,9 @@ on:
       - main
 
 jobs:
-  deploy:
+  cd:
     runs-on: ubuntu-latest
+    environment: mzm-prod
     permissions:
       id-token: write
       contents: read
@@ -28,33 +29,11 @@ jobs:
           workload_identity_provider: "projects/664095006793/locations/global/workloadIdentityPools/github-actions/providers/github-provider"
           service_account: "mzm-cicd-sa@mzm-org-il.iam.gserviceaccount.com"
 
-      - name: Debug GCP Auth Details
-        run: |
-          echo "Credentials file: $GOOGLE_APPLICATION_CREDENTIALS"
-          cat "$GOOGLE_APPLICATION_CREDENTIALS" || echo "No credentials file found."
-          echo "Gcloud config:"
-          gcloud config list
-
-      - name: Verify GCP Auth
-        run: gcloud auth list
-
-      - name: Verify GCS Bucket Access
-        run: gsutil ls gs://mzm-org-il-terraform-state
-
       - name: OpenTofu Init
         run: tofu init -backend-config="bucket=mzm-org-il-terraform-state" -backend-config="prefix=gke-cluster/state"
 
       - name: OpenTofu Plan
-        env:
-          TF_LOG: DEBUG
-          TF_LOG_PATH: plan.log
-        run: |
-          timeout 120s tofu plan -out=tfplan || true
-          if [ -f plan.log ]; then
-            cat plan.log
-          else
-            echo "No logs captured."
-          fi
+        run: tofu plan -out=tfplan -input=false -detailed-exitcode
 
       - name: OpenTofu Apply
         run: tofu apply tfplan
