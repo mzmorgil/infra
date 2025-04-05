@@ -32,11 +32,11 @@ jobs:
       - name: OpenTofu Init
         run: tofu init -backend-config="bucket=mzm-org-il-terraform-state" -backend-config="prefix=gke-cluster/state"
 
-      - name: Debug Environment Variables
-        run: |
-          env | grep TF_VAR_
-
       - name: OpenTofu Plan
+        env:
+          TF_VAR_CLOUDFLARE_ACCOUNT_ID: ${{ vars.TF_VAR_CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_CLOUDFLARE_ZONE: ${{ vars.TF_VAR_CLOUDFLARE_ZONE }}
+          TF_VAR_CLOUDFLARE_API_TOKEN: ${{ secrets.TF_VAR_CLOUDFLARE_API_TOKEN }}
         run: tofu plan -out=tfplan -input=false -detailed-exitcode
 
       - name: OpenTofu Apply
