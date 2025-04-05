@@ -70,15 +70,15 @@ resource "google_service_account_iam_member" "workload_identity_binding" {
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/${var.github_repo}"
 }
 
-resource "google_project_iam_member" "cicd_sa_viewer" {
-  project = var.project_id
-  role    = "roles/viewer"
-  member  = "serviceAccount:${google_service_account.cicd_sa.email}"
-}
+# Define all IAM roles for the CI/CD service account in a single resource
+resource "google_project_iam_member" "cicd_sa_roles" {
+  for_each = toset([
+    "roles/viewer",
+    "roles/storage.objectAdmin",
+    "roles/container.admin"
+  ])
 
-# Grant the CI/CD service account permissions to manage objects in the Terraform state bucket
-resource "google_storage_bucket_iam_member" "cicd_sa_storage_admin" {
-  bucket = google_storage_bucket.terraform_state.name
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_service_account.cicd_sa.email}"
+  project = var.project_id
+  role    = each.key
+  member  = "serviceAccount:${google_service_account.cicd_sa.email}"
 }
