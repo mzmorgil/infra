@@ -23,7 +23,7 @@ terraform {
 
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 4.0"
+      version = "~> 5"
     }
 
     random = {
@@ -55,5 +55,4 @@ provider "helm" {
 }
 
 provider "cloudflare" {
-  api_token = var.cloudflare_api_token
 }

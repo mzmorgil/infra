@@ -26,6 +26,6 @@ variable "cloudflare_account_id" {
 }
 
 variable "cloudflare_zone" {
-  description = "Domain used to expose the GCP VM instance to the Internet"
+  description = "The Cloudflare zone name"
   type        = string
 }
