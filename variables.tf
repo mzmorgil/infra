@@ -29,9 +29,3 @@ variable "cloudflare_zone" {
   description = "Domain used to expose the GCP VM instance to the Internet"
   type        = string
 }
-
-variable "cloudflare_api_token" {
-  description = "Cloudflare API token created at https://dash.cloudflare.com"
-  type        = string
-  sensitive   = true
-}
