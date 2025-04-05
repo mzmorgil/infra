@@ -21,10 +21,10 @@ terraform {
       version = "~> 2"
     }
 
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "~> 5"
-    }
+    # cloudflare = {
+    #   source  = "cloudflare/cloudflare"
+    #   version = "~> 5"
+    # }
 
     random = {
       source  = "hashicorp/random"
@@ -54,7 +54,6 @@ provider "helm" {
   }
 }
 
-provider "cloudflare" {
-  # API token can be provided via CLOUDFLARE_API_TOKEN environment variable
-  api_token = var.cloudflare_api_token
-}
+# provider "cloudflare" {
+#   api_token = var.cloudflare_api_token
+# }

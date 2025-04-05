@@ -32,6 +32,11 @@ jobs:
       - name: OpenTofu Init
         run: tofu init -backend-config="bucket=mzm-org-il-terraform-state" -backend-config="prefix=gke-cluster/state"
 
+      - name: Debug Environment Variables
+        run: |
+          env | grep TF_VAR_
+        shell: /usr/bin/bash -e {0}
+
       - name: OpenTofu Plan
         run: tofu plan -out=tfplan -input=false -detailed-exitcode
 
