@@ -23,4 +23,8 @@ resource "helm_release" "nginx_ingress" {
     name  = "controller.replicaCount"
     value = "1"
   }
-}
+
+  set {
+    name  = "controller.allowSnippetAnnotations"
+    value = "true"
+  }
