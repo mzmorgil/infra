@@ -29,10 +29,8 @@ resource "helm_release" "nginx_ingress" {
     value = "true"
   }
 
-  set {
-    name  = "controller.config"
-    value = {
-      "annotations-risk-level" = "Critical"
-    }
+set {
+    name  = "controller.config.annotations-risk-level"
+    value = "Critical"
   }
 }
