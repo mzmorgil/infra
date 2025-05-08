@@ -87,7 +87,7 @@ resource "kubernetes_deployment" "cloudflared" {
 
       spec {
         container {
-          image = "cloudflare/cloudflared:2025.4.0"
+          image = "cloudflare/cloudflared:2025.4.2"
           name  = "cloudflared"
           args = [
             "--metrics",
